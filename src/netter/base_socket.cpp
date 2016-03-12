@@ -1,0 +1,361 @@
+#include <assert.h>
+#include "base_socket.h"
+#include "event_loop.h"
+#include "util.h"
+#include "mutex.h"
+using std::make_pair;
+
+
+// replace socket with handle to notify upper layer,
+// cause socket will be reused while handle will be increasing whenever a new CBaseSocket is created
+// to avoid confusion
+
+Mutex       g_handle_mutex;
+static net_handle_t g_handle_allocator = 1;
+
+BaseSocket* FindBaseSocket(net_handle_t handle)
+{
+    EventLoop* el = get_io_event_loop(handle);
+    return el->FindBaseSocket(handle);
+}
+
+//////////////////////////////
+
+BaseSocket::BaseSocket()
+{
+	printf("BaseSocket::BaseSocket\n");
+	m_socket = INVALID_SOCKET;
+	m_state = SOCKET_STATE_IDLE;
+	
+    MutexGuard mg(g_handle_mutex);
+    do {
+        m_handle = g_handle_allocator++;
+        if (m_handle < 0) {
+            m_handle = 1;
+        }
+        
+        // skip handle that is already used in listen socket, assume connection socket can not last too long
+        if (get_main_event_loop()->FindBaseSocket(m_handle) == NULL) {
+            break;
+        }
+    } while (true);
+}
+
+BaseSocket::~BaseSocket()
+{
+	printf("BaseSocket::~BaseSocket, socket=%d\n", m_socket);
+}
+
+net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t callback, void* callback_data)
+{
+	m_local_ip = server_ip;
+	m_local_port = port;
+	m_callback = callback;
+	m_callback_data = callback_data;
+
+	m_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (m_socket == INVALID_SOCKET) {
+		printf("socket failed, err_code=%d\n", _GetErrorCode());
+		return NETLIB_INVALID_HANDLE;
+	}
+
+	_SetReuseAddr(m_socket);
+	_SetNonblock(m_socket);
+
+	sockaddr_in serv_addr;
+	_SetAddr(server_ip, port, &serv_addr);
+    int ret = ::bind(m_socket, (sockaddr*)&serv_addr, sizeof(serv_addr));
+	if (ret == SOCKET_ERROR) {
+		printf("bind %s:%d failed, err_code=%d\n", server_ip, port, _GetErrorCode());
+		close(m_socket);
+		return NETLIB_INVALID_HANDLE;
+	}
+
+	ret = listen(m_socket, 1024);
+	if (ret == SOCKET_ERROR) {
+		printf("listen failed, err_code=%d\n", _GetErrorCode());
+		close(m_socket);
+		return NETLIB_INVALID_HANDLE;
+	}
+    
+    _GetBindAddr();
+
+	m_state = SOCKET_STATE_LISTENING;
+
+	printf("CBaseSocket::Listen on %s:%d\n", server_ip, port);
+
+    m_event_loop = get_main_event_loop();
+	m_event_loop->AddEvent(m_socket, SOCKET_READ | SOCKET_EXCEP | SOCKET_ADD_CONN, this);
+    return m_handle;
+}
+
+net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_t callback, void* callback_data,
+		const char* local_ip, uint16_t local_port)
+{
+	printf("CBaseSocket::Connect, server_ip=%s, port=%d\n", server_ip, port);
+
+	m_remote_ip = server_ip;
+	m_remote_port = port;
+	m_callback = callback;
+	m_callback_data = callback_data;
+
+	m_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (m_socket == INVALID_SOCKET) {
+		printf("socket failed, err_code=%d\n", _GetErrorCode());
+		return NETLIB_INVALID_HANDLE;
+	}
+
+	_SetNonblock(m_socket);
+	_SetNoDelay(m_socket);
+
+	if (local_ip) {
+		sockaddr_in local_addr;
+		_SetAddr(local_ip, local_port, &local_addr);
+        int ret = ::bind(m_socket, (sockaddr*)&local_addr, sizeof(local_addr));
+		if (ret == SOCKET_ERROR) {
+			printf("bind failed, err_code=%d\n", _GetErrorCode());
+			close(m_socket);
+			return NETLIB_INVALID_HANDLE;
+		}
+	}
+
+	sockaddr_in serv_addr;
+	_SetAddr(server_ip, port, &serv_addr);
+	int ret = connect(m_socket, (sockaddr*)&serv_addr, sizeof(serv_addr));
+	if ( (ret == SOCKET_ERROR) && (!_IsBlock(_GetErrorCode())) )
+	{
+		printf("connect failed, err_code=%d\n", _GetErrorCode());
+		close(m_socket);
+		return NETLIB_INVALID_HANDLE;
+	}
+
+    _GetBindAddr();
+    
+	m_state = SOCKET_STATE_CONNECTING;
+    
+    m_event_loop = get_io_event_loop(m_handle);
+	m_event_loop->AddEvent(m_socket, SOCKET_ALL|SOCKET_ADD_CONN, this);
+	
+	return m_handle;
+}
+
+int BaseSocket::Send(void* buf, int len)
+{
+    int ret = (int)send(m_socket, (char*)buf, len, 0);
+	if (ret == SOCKET_ERROR)
+	{
+		int err_code = _GetErrorCode();
+		if (_IsBlock(err_code))
+		{
+#ifdef __APPLE__
+			m_event_loop->AddEvent(m_socket, SOCKET_WRITE, this);
+#endif
+			ret = 0;
+		}
+		else
+		{
+			printf("!!!send failed, error code: %d\n", err_code);
+		}
+	}
+  
+	return ret;
+}
+
+int BaseSocket::Recv(void* buf, int len)
+{
+    int n = (int)recv(m_socket, (char*)buf, len, 0);
+    if (n == 0) {
+        m_state = SOCKET_STATE_CLOSING;
+    }
+    
+    return n;
+}
+
+int BaseSocket::Close()
+{
+    m_state = SOCKET_STATE_CLOSING;
+	m_event_loop->RemoveEvent(m_socket, SOCKET_ALL|SOCKET_DEL_CONN, this);
+	close(m_socket);
+    delete this;
+    
+	return 0;
+}
+
+void BaseSocket::OnConnect()
+{
+    m_callback(m_callback_data, NETLIB_MSG_CONNECT, m_handle, this);
+}
+
+void BaseSocket::OnRead()
+{
+	if (m_state == SOCKET_STATE_LISTENING) {
+		_AcceptNewSocket();
+	} else {
+		u_long avail = 0;
+		if ( (ioctl(m_socket, FIONREAD, &avail) == SOCKET_ERROR) || (avail == 0) ) {
+			m_callback(m_callback_data, NETLIB_MSG_CLOSE, m_handle, NULL);
+		} else {
+			m_callback(m_callback_data, NETLIB_MSG_READ, m_handle, NULL);
+            
+            // 处理数据包和FIN包一起过来的场景，这样只能在recv返回0才能判断对端关闭了socket
+            if (m_state == SOCKET_STATE_CLOSING) {
+                m_callback(m_callback_data, NETLIB_MSG_CLOSE, m_handle, NULL);
+            }
+		}
+	}
+}
+
+void BaseSocket::OnWrite()
+{
+#ifdef __APPLE__
+	m_event_loop->RemoveEvent(m_socket, SOCKET_WRITE, this);
+#endif
+
+	if (m_state == SOCKET_STATE_CONNECTING) {
+		int error = 0;
+		unsigned int len = sizeof(error);
+		getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (void*)&error, &len);
+		if (error) {
+			m_callback(m_callback_data, NETLIB_MSG_CLOSE, m_handle, NULL);
+		} else {
+			// if the peer and local ip:port is equal, then close the local TCP loop connection
+			// see http://www.rampa.sk/static/tcpLoopConnect.html for details
+			sockaddr_in local_addr, remote_addr;
+			socklen_t local_len, remote_len;
+			local_len = remote_len = sizeof(sockaddr_in);
+
+			if (!getsockname(m_socket, (sockaddr*)&local_addr, &local_len) &&
+				!getpeername(m_socket, (sockaddr*)&remote_addr, &remote_len) ) {
+				if ((local_addr.sin_addr.s_addr == remote_addr.sin_addr.s_addr) &&
+					(local_addr.sin_port == remote_addr.sin_port) ) {
+					printf("close TCP loop connection\n");
+					OnClose();
+					return;
+				}
+			}
+
+            m_state = SOCKET_STATE_CONNECTED;
+			m_callback(m_callback_data, NETLIB_MSG_CONFIRM, m_handle, NULL);
+		}
+	} else if (m_state == SOCKET_STATE_CONNECTED) {
+		m_callback(m_callback_data, NETLIB_MSG_WRITE, m_handle, NULL);
+	}
+}
+
+void BaseSocket::OnClose()
+{
+	m_state = SOCKET_STATE_CLOSING;
+	m_callback(m_callback_data, NETLIB_MSG_CLOSE, m_handle, NULL);
+}
+
+void BaseSocket::OnTimer(uint64_t curr_tick)
+{
+    if (m_state != SOCKET_STATE_LISTENING)
+        m_callback(m_callback_data, NETLIB_MSG_TIMER, m_handle, &curr_tick);
+}
+
+int BaseSocket::_GetErrorCode()
+{
+	return errno;
+}
+
+bool BaseSocket::_IsBlock(int error_code)
+{
+	return ( (error_code == EINPROGRESS) || (error_code == EWOULDBLOCK) );
+}
+
+void BaseSocket::_SetNonblock(int fd)
+{
+	int ret = fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(fd, F_GETFL));
+	if (ret == SOCKET_ERROR) {
+		printf("_SetNonblock failed, err_code=%d\n", _GetErrorCode());
+	}
+}
+
+void BaseSocket::_SetReuseAddr(int fd)
+{
+	int reuse = 1;
+	int ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse, sizeof(reuse));
+	if (ret == SOCKET_ERROR) {
+		printf("_SetReuseAddr failed, err_code=%d\n", _GetErrorCode());
+	}
+}
+
+void BaseSocket::_SetNoDelay(int fd)
+{
+	int nodelay = 1;
+	int ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
+	if (ret == SOCKET_ERROR) {
+		printf("_SetNoDelay failed, err_code=%d\n", _GetErrorCode());
+	}
+}
+
+void BaseSocket::_SetAddr(const char* ip, const uint16_t port, sockaddr_in* pAddr)
+{
+	memset(pAddr, 0, sizeof(sockaddr_in));
+	pAddr->sin_family = AF_INET;
+	pAddr->sin_port = htons(port);
+	pAddr->sin_addr.s_addr = inet_addr(ip);
+	if (pAddr->sin_addr.s_addr == INADDR_NONE) {
+		hostent* host = gethostbyname(ip);
+		if (host == NULL) {
+			printf("gethostbyname failed, ip=%s\n", ip);
+			return;
+		}
+
+		pAddr->sin_addr.s_addr = *(uint32_t*)host->h_addr;
+	}
+}
+
+void BaseSocket::_GetBindAddr()
+{
+    struct sockaddr_in local_addr;
+    socklen_t len = sizeof(local_addr);
+    getsockname(m_socket, (sockaddr*)&local_addr, &len);
+    uint32_t ip = ntohl(local_addr.sin_addr.s_addr);
+    char ip_str[64];
+    snprintf(ip_str, sizeof(ip_str), "%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF);
+    m_local_ip = ip_str;
+    m_local_port = ntohs(local_addr.sin_port);
+}
+
+void BaseSocket::_AcceptNewSocket()
+{
+	int fd = 0;
+	sockaddr_in peer_addr;
+	socklen_t addr_len = sizeof(sockaddr_in);
+	char ip_str[64];
+
+	while (true) {
+        fd = accept(m_socket, (sockaddr*)&peer_addr, &addr_len);
+        if (fd == INVALID_SOCKET) {
+            if (errno != EWOULDBLOCK) {
+                printf("accept errno=%d\n", errno);
+            }
+            
+            break;
+        }
+        
+		BaseSocket* pSocket = new BaseSocket();
+
+		uint32_t ip = ntohl(peer_addr.sin_addr.s_addr);
+		uint16_t port = ntohs(peer_addr.sin_port);
+
+		snprintf(ip_str, sizeof(ip_str), "%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF);
+
+		pSocket->SetSocket(fd);
+		pSocket->SetCallback(m_callback);
+		pSocket->SetCallbackData(m_callback_data);
+		pSocket->SetState(SOCKET_STATE_CONNECTED);
+		pSocket->SetRemoteIP(ip_str);
+		pSocket->SetRemotePort(port);
+
+		_SetNoDelay(fd);
+		_SetNonblock(fd);
+        
+        EventLoop* client_event_loop = get_io_event_loop(pSocket->GetHandle());
+        pSocket->SetEventLoop(client_event_loop);
+		client_event_loop->AddEvent(fd, SOCKET_READ | SOCKET_EXCEP | SOCKET_CONNECT_CB| SOCKET_ADD_CONN, pSocket);
+	}
+}
+
