@@ -2,18 +2,15 @@
 CC = g++
 
 ver=release
-ifeq ($(ver), debug)
-	CFLAGS=-Wall -g -std=c++11
-else
-	CFLAGS=-Wall -g -O2 -std=c++11
+CFLAGS=-Wall -g -std=c++11
+ifeq ($(ver), release)
+CFLAGS := $(CFLAGS) -O2 
 endif
 
 LDFLAGS= -lpthread -lnetter
-LN=/bin/ln -s 
 AR=ar
 CP=/bin/cp
-RM=-/bin/rm -rf
-ARCH=PC
+RM=/bin/rm -rf
 
 # 二进制目标
 BIN=test_server
@@ -44,5 +41,5 @@ $(BIN):$(OBJS)
 
 .PHONY: clean
 clean:
-	@echo "[$(ARCH)] \tCleaning files..."
+	@echo "\tCleaning files..."
 	@$(RM) $(OBJS) $(BIN)

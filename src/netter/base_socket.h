@@ -69,8 +69,7 @@ public:
 	void OnClose();
     void OnTimer(uint64_t curr_tick);
 
-private:	
-	int _GetErrorCode();
+private:
 	bool _IsBlock(int error_code);
 
 	void _SetNonblock(int fd);

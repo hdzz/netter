@@ -2,16 +2,11 @@
 #include "base_socket.h"
 #include "event_loop.h"
 #include "util.h"
-#include "mutex.h"
-using std::make_pair;
 
+// replace socket with handle to notify upper layer, cause socket will be reused
+// while handle will be increasing whenever a new BaseSocket is created to avoid confusion
 
-// replace socket with handle to notify upper layer,
-// cause socket will be reused while handle will be increasing whenever a new CBaseSocket is created
-// to avoid confusion
-
-Mutex       g_handle_mutex;
-static net_handle_t g_handle_allocator = 1;
+static atomic<net_handle_t> g_handle_allocator {1};
 
 BaseSocket* FindBaseSocket(net_handle_t handle)
 {
@@ -27,7 +22,6 @@ BaseSocket::BaseSocket()
 	m_socket = INVALID_SOCKET;
 	m_state = SOCKET_STATE_IDLE;
 	
-    MutexGuard mg(g_handle_mutex);
     do {
         m_handle = g_handle_allocator++;
         if (m_handle < 0) {
@@ -55,7 +49,7 @@ net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t
 
 	m_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_socket == INVALID_SOCKET) {
-		printf("socket failed, err_code=%d\n", _GetErrorCode());
+		printf("socket failed, err_code=%d\n", errno);
 		return NETLIB_INVALID_HANDLE;
 	}
 
@@ -66,14 +60,14 @@ net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t
 	_SetAddr(server_ip, port, &serv_addr);
     int ret = ::bind(m_socket, (sockaddr*)&serv_addr, sizeof(serv_addr));
 	if (ret == SOCKET_ERROR) {
-		printf("bind %s:%d failed, err_code=%d\n", server_ip, port, _GetErrorCode());
+		printf("bind %s:%d failed, err_code=%d\n", server_ip, port, errno);
 		close(m_socket);
 		return NETLIB_INVALID_HANDLE;
 	}
 
 	ret = listen(m_socket, 1024);
 	if (ret == SOCKET_ERROR) {
-		printf("listen failed, err_code=%d\n", _GetErrorCode());
+		printf("listen failed, err_code=%d\n", errno);
 		close(m_socket);
 		return NETLIB_INVALID_HANDLE;
 	}
@@ -101,7 +95,7 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 
 	m_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_socket == INVALID_SOCKET) {
-		printf("socket failed, err_code=%d\n", _GetErrorCode());
+		printf("socket failed, err_code=%d\n", errno);
 		return NETLIB_INVALID_HANDLE;
 	}
 
@@ -113,7 +107,7 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 		_SetAddr(local_ip, local_port, &local_addr);
         int ret = ::bind(m_socket, (sockaddr*)&local_addr, sizeof(local_addr));
 		if (ret == SOCKET_ERROR) {
-			printf("bind failed, err_code=%d\n", _GetErrorCode());
+			printf("bind failed, err_code=%d\n", errno);
 			close(m_socket);
 			return NETLIB_INVALID_HANDLE;
 		}
@@ -122,9 +116,8 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 	sockaddr_in serv_addr;
 	_SetAddr(server_ip, port, &serv_addr);
 	int ret = connect(m_socket, (sockaddr*)&serv_addr, sizeof(serv_addr));
-	if ( (ret == SOCKET_ERROR) && (!_IsBlock(_GetErrorCode())) )
-	{
-		printf("connect failed, err_code=%d\n", _GetErrorCode());
+	if ( (ret == SOCKET_ERROR) && (!_IsBlock(errno)) ) {
+		printf("connect failed, err_code=%d\n", errno);
 		close(m_socket);
 		return NETLIB_INVALID_HANDLE;
 	}
@@ -142,19 +135,14 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 int BaseSocket::Send(void* buf, int len)
 {
     int ret = (int)send(m_socket, (char*)buf, len, 0);
-	if (ret == SOCKET_ERROR)
-	{
-		int err_code = _GetErrorCode();
-		if (_IsBlock(err_code))
-		{
+	if (ret == SOCKET_ERROR) {
+		if (_IsBlock(errno)) {
 #ifdef __APPLE__
 			m_event_loop->AddEvent(m_socket, SOCKET_WRITE, this);
 #endif
 			ret = 0;
-		}
-		else
-		{
-			printf("!!!send failed, error code: %d\n", err_code);
+		} else {
+			printf("!!!send failed, error code: %d\n", errno);
 		}
 	}
   
@@ -254,11 +242,6 @@ void BaseSocket::OnTimer(uint64_t curr_tick)
         m_callback(m_callback_data, NETLIB_MSG_TIMER, m_handle, &curr_tick);
 }
 
-int BaseSocket::_GetErrorCode()
-{
-	return errno;
-}
-
 bool BaseSocket::_IsBlock(int error_code)
 {
 	return ( (error_code == EINPROGRESS) || (error_code == EWOULDBLOCK) );
@@ -268,7 +251,7 @@ void BaseSocket::_SetNonblock(int fd)
 {
 	int ret = fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(fd, F_GETFL));
 	if (ret == SOCKET_ERROR) {
-		printf("_SetNonblock failed, err_code=%d\n", _GetErrorCode());
+		printf("_SetNonblock failed, err_code=%d\n", errno);
 	}
 }
 
@@ -277,7 +260,7 @@ void BaseSocket::_SetReuseAddr(int fd)
 	int reuse = 1;
 	int ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse, sizeof(reuse));
 	if (ret == SOCKET_ERROR) {
-		printf("_SetReuseAddr failed, err_code=%d\n", _GetErrorCode());
+		printf("_SetReuseAddr failed, err_code=%d\n", errno);
 	}
 }
 
@@ -286,7 +269,7 @@ void BaseSocket::_SetNoDelay(int fd)
 	int nodelay = 1;
 	int ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
 	if (ret == SOCKET_ERROR) {
-		printf("_SetNoDelay failed, err_code=%d\n", _GetErrorCode());
+		printf("_SetNoDelay failed, err_code=%d\n", errno);
 	}
 }
 
