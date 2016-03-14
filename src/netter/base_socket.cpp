@@ -53,11 +53,11 @@ net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t
 		return NETLIB_INVALID_HANDLE;
 	}
 
-	_SetReuseAddr(m_socket);
-	_SetNonblock(m_socket);
+	SetReuseAddr(m_socket);
+	SetNonblock(m_socket, true);
 
 	sockaddr_in serv_addr;
-	_SetAddr(server_ip, port, &serv_addr);
+	SetAddr(server_ip, port, &serv_addr);
     int ret = ::bind(m_socket, (sockaddr*)&serv_addr, sizeof(serv_addr));
 	if (ret == SOCKET_ERROR) {
 		printf("bind %s:%d failed, err_code=%d\n", server_ip, port, errno);
@@ -72,7 +72,7 @@ net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t
 		return NETLIB_INVALID_HANDLE;
 	}
     
-    _GetBindAddr();
+    GetBindAddr(m_socket, m_local_ip, m_local_port);
 
 	m_state = SOCKET_STATE_LISTENING;
 
@@ -99,12 +99,12 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 		return NETLIB_INVALID_HANDLE;
 	}
 
-	_SetNonblock(m_socket);
-	_SetNoDelay(m_socket);
+	SetNonblock(m_socket, true);
+	SetNoDelay(m_socket);
 
 	if (local_ip) {
 		sockaddr_in local_addr;
-		_SetAddr(local_ip, local_port, &local_addr);
+		SetAddr(local_ip, local_port, &local_addr);
         int ret = ::bind(m_socket, (sockaddr*)&local_addr, sizeof(local_addr));
 		if (ret == SOCKET_ERROR) {
 			printf("bind failed, err_code=%d\n", errno);
@@ -114,7 +114,7 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 	}
 
 	sockaddr_in serv_addr;
-	_SetAddr(server_ip, port, &serv_addr);
+	SetAddr(server_ip, port, &serv_addr);
 	int ret = connect(m_socket, (sockaddr*)&serv_addr, sizeof(serv_addr));
 	if ( (ret == SOCKET_ERROR) && (!_IsBlock(errno)) ) {
 		printf("connect failed, err_code=%d\n", errno);
@@ -122,7 +122,7 @@ net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_
 		return NETLIB_INVALID_HANDLE;
 	}
 
-    _GetBindAddr();
+    GetBindAddr(m_socket, m_local_ip, m_local_port);
     
 	m_state = SOCKET_STATE_CONNECTING;
     
@@ -242,20 +242,23 @@ void BaseSocket::OnTimer(uint64_t curr_tick)
         m_callback(m_callback_data, NETLIB_MSG_TIMER, m_handle, &curr_tick);
 }
 
-bool BaseSocket::_IsBlock(int error_code)
-{
-	return ( (error_code == EINPROGRESS) || (error_code == EWOULDBLOCK) );
-}
 
-void BaseSocket::_SetNonblock(int fd)
+void BaseSocket::SetNonblock(int fd, bool nonblock)
 {
-	int ret = fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(fd, F_GETFL));
+    int ret = 0;
+    int flags = fcntl(fd, F_GETFL);
+    if (nonblock) {
+        ret = fcntl(fd, F_SETFL, O_NONBLOCK | flags);
+    } else {
+        ret = fcntl(fd, F_SETFL, ~O_NONBLOCK & flags);
+    }
+
 	if (ret == SOCKET_ERROR) {
 		printf("_SetNonblock failed, err_code=%d\n", errno);
 	}
 }
 
-void BaseSocket::_SetReuseAddr(int fd)
+void BaseSocket::SetReuseAddr(int fd)
 {
 	int reuse = 1;
 	int ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse, sizeof(reuse));
@@ -264,7 +267,7 @@ void BaseSocket::_SetReuseAddr(int fd)
 	}
 }
 
-void BaseSocket::_SetNoDelay(int fd)
+void BaseSocket::SetNoDelay(int fd)
 {
 	int nodelay = 1;
 	int ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
@@ -273,7 +276,7 @@ void BaseSocket::_SetNoDelay(int fd)
 	}
 }
 
-void BaseSocket::_SetAddr(const char* ip, const uint16_t port, sockaddr_in* pAddr)
+void BaseSocket::SetAddr(const char* ip, const uint16_t port, sockaddr_in* pAddr)
 {
 	memset(pAddr, 0, sizeof(sockaddr_in));
 	pAddr->sin_family = AF_INET;
@@ -290,16 +293,21 @@ void BaseSocket::_SetAddr(const char* ip, const uint16_t port, sockaddr_in* pAdd
 	}
 }
 
-void BaseSocket::_GetBindAddr()
+void BaseSocket::GetBindAddr(int fd, string& bind_ip, uint16_t& bind_port)
 {
     struct sockaddr_in local_addr;
     socklen_t len = sizeof(local_addr);
-    getsockname(m_socket, (sockaddr*)&local_addr, &len);
+    getsockname(fd, (sockaddr*)&local_addr, &len);
     uint32_t ip = ntohl(local_addr.sin_addr.s_addr);
     char ip_str[64];
     snprintf(ip_str, sizeof(ip_str), "%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF);
-    m_local_ip = ip_str;
-    m_local_port = ntohs(local_addr.sin_port);
+    bind_ip = ip_str;
+    bind_port = ntohs(local_addr.sin_port);
+}
+
+bool BaseSocket::_IsBlock(int error_code)
+{
+	return ( (error_code == EINPROGRESS) || (error_code == EWOULDBLOCK) );
 }
 
 void BaseSocket::_AcceptNewSocket()
@@ -333,8 +341,8 @@ void BaseSocket::_AcceptNewSocket()
 		pSocket->SetRemoteIP(ip_str);
 		pSocket->SetRemotePort(port);
 
-		_SetNoDelay(fd);
-		_SetNonblock(fd);
+		SetNoDelay(fd);
+		SetNonblock(fd, true);
         
         EventLoop* client_event_loop = get_io_event_loop(pSocket->GetHandle());
         pSocket->SetEventLoop(client_event_loop);

@@ -13,14 +13,14 @@ CP=/bin/cp
 RM=/bin/rm -rf
 
 # 二进制目标
-BIN=test_server
+BIN=client
 
 #源文件目录
 SrcDir= .
 #头文件目录
-IncDir= . ../netter
+IncDir= . ../../netter
 #连接库目录
-LibDir= ../netter
+LibDir= ../../netter
 
 SRCS=$(foreach dir,$(SrcDir),$(wildcard $(dir)/*.cpp))
 INCS=$(foreach dir,$(IncDir),$(addprefix -I,$(dir)))

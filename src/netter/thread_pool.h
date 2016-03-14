@@ -12,6 +12,26 @@
 #include <list>
 using namespace std;
 
+class Thread
+{
+public:
+	Thread() : m_thread_id(0) {}
+	virtual ~Thread() {}
+    
+	static void* StartRoutine(void* arg) {
+        Thread* pThread = (Thread*)arg;
+        pThread->OnThreadRun();
+        return NULL;
+    }
+    
+	virtual void StartThread(void) {
+        pthread_create(&m_thread_id, NULL, StartRoutine, this);
+    }
+	virtual void OnThreadRun(void) = 0;
+protected:
+	pthread_t	m_thread_id;
+};
+
 class ThreadNotify
 {
 public:
@@ -47,7 +67,7 @@ public:
 	static void* StartRoutine(void* arg);
 
 	void Start();
-    void Stop() { m_stop = true; }
+    void Stop();
 	void Execute();
 	void PushTask(Task* pTask);
 

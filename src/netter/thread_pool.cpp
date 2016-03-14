@@ -48,13 +48,19 @@ void WorkerThread::Start()
 	(void)pthread_create(&m_thread_id, NULL, StartRoutine, this);
 }
 
+void WorkerThread::Stop()
+{
+    m_stop = true;
+    m_thread_notify.Signal();
+}
+
 void WorkerThread::Execute()
 {
 	while (!m_stop) {
 		m_thread_notify.Lock();
 
 		// put wait in while cause there can be spurious wake up (due to signal/ENITR)
-		while (m_task_list.empty()) {
+		while (m_task_list.empty() && !m_stop) {
 			m_thread_notify.Wait();
 		}
         
@@ -115,6 +121,7 @@ void ThreadPool::Destory()
     }
     
     for (int i = 0; i < m_thread_num; ++i) {
+        m_worker_threads[i].Stop();
         pthread_join(m_worker_threads[i].GetThreadId(), NULL);
     }
 
@@ -126,7 +133,7 @@ void ThreadPool::AddTask(Task* pTask)
 	/*
 	 * select a random thread to push task
 	 * we can also select a thread that has less task to do
-	 * but that will scan the whole thread list and use thread lock to get each task size
+	 * but that will scan the whole threads vector and use thread lock to get each task size
 	 */
 	uint32_t thread_idx = random() % m_thread_num;
 	m_worker_threads[thread_idx].PushTask(pTask);

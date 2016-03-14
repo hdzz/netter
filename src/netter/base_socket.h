@@ -69,15 +69,14 @@ public:
 	void OnClose();
     void OnTimer(uint64_t curr_tick);
 
+	static void SetNonblock(int fd, bool nonblock);
+	static void SetReuseAddr(int fd);
+	static void SetNoDelay(int fd);
+	static void SetAddr(const char* ip, const uint16_t port, sockaddr_in* pAddr);
+    static void GetBindAddr(int fd, string& bind_ip, uint16_t& bind_port);
+
 private:
 	bool _IsBlock(int error_code);
-
-	void _SetNonblock(int fd);
-	void _SetReuseAddr(int fd);
-	void _SetNoDelay(int fd);
-	void _SetAddr(const char* ip, const uint16_t port, sockaddr_in* pAddr);
-    void _GetBindAddr();
-
 	void _AcceptNewSocket();
 
 private:

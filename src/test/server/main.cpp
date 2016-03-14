@@ -108,16 +108,6 @@ int main(int argc, char* argv[])
     BaseSocket http_socket;
     http_socket.Listen(g_config.host.c_str(), g_config.http_port, connect_callback<HttpConn>, NULL);
     
-    SimpleLog simple_log;
-    simple_log.Init(kLogLevelInfo, "log_path");
-    
-    uint64_t start_tick = get_tick_count();
-    for (int i = 0; i < 100000; ++i) {
-        simple_log.LogMessage(kLogLevelInfo, "log: %s:%d\n", g_config.host.c_str(), g_config.port);
-    }
-    uint64_t cost_tick = get_tick_count() - start_tick;
-    printf("cost=%llu\n", cost_tick);
-    
     get_main_event_loop()->Start(1000);
     
     printf("end main eventloop\n");

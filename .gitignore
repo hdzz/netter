@@ -1,2 +1,4 @@
 *.o
 *.a
+src/test/server/server
+src/test/client/client
