@@ -16,7 +16,6 @@ PktBase::PktBase()
 	m_pkt_header.version = PKT_VERSION;
 	m_pkt_header.flag = 0;
 	m_pkt_header.pkt_id = 0;
-	m_pkt_header.req_time = 0;
     m_pkt_header.seq_no = 0;
 }
 
@@ -44,8 +43,7 @@ void PktBase::WriteHeader()
 	CByteStream::WriteUint16(buf + 4, m_pkt_header.version);
 	CByteStream::WriteUint16(buf + 6, m_pkt_header.flag);
 	CByteStream::WriteUint32(buf + 8, m_pkt_header.pkt_id);
-	CByteStream::WriteUint32(buf + 12, m_pkt_header.req_time);
-    CByteStream::WriteUint32(buf + 16, m_pkt_header.seq_no);
+    CByteStream::WriteUint32(buf + 12, m_pkt_header.seq_no);
 }
 
 void PktBase::SetVersion(uint16_t version)
@@ -62,24 +60,11 @@ void PktBase::SetFlag(uint16_t flag)
     m_pkt_header.flag = flag;
 }
 
-void PktBase::SetReqTime(uint32_t req_time)
-{
-    uchar_t* buf = GetBuffer();
-    CByteStream::WriteUint32(buf + 12, req_time);
-    m_pkt_header.req_time = req_time;
-}
-
 void PktBase::SetSeqNo(uint32_t seq_no)
 {
     uchar_t* buf = GetBuffer();
-	CByteStream::WriteUint32(buf + 16, seq_no);
+	CByteStream::WriteUint32(buf + 12, seq_no);
     m_pkt_header.seq_no = seq_no;
-}
-
-void PktBase::SetPktHeader(PktBase* pPkt)
-{
-    SetReqTime(pPkt->GetReqTime());
-    SetSeqNo(pPkt->GetSeqNo());
 }
 
 int PktBase::ReadPktHeader(uchar_t* buf, uint32_t len, pkt_header_t* header)
@@ -92,7 +77,6 @@ int PktBase::ReadPktHeader(uchar_t* buf, uint32_t len, pkt_header_t* header)
 		is >> header->version;
 		is >> header->flag;
 		is >> header->pkt_id;
-        is >> header->req_time;
         is >> header->seq_no;
 
 		ret = 0;

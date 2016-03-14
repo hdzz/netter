@@ -12,7 +12,7 @@
 #include "byte_stream.h"
 
 #define PKT_VERSION     1
-#define PKT_HEADER_LEN  20
+#define PKT_HEADER_LEN  16
 
 #define SETUP_PKT_HEADER(PKT_ID) \
     m_pkt_header.pkt_id = PKT_ID; \
@@ -38,7 +38,6 @@ typedef  struct {
     uint16_t    version;    // 数据包版本号，用于版本兼容
     uint16_t    flag;       // 预留的标志，以后可以用于压缩，加密
     uint32_t    pkt_id;     // 数据包类型ID
-    uint32_t    req_time;   // 请求的毫秒时间戳，用于统计请求消耗时间
     uint32_t    seq_no;     // 请求序列号
 } pkt_header_t;
 
@@ -54,15 +53,11 @@ public:
 	uint16_t GetVersion() { return m_pkt_header.version; }
 	uint16_t GetFlag() { return m_pkt_header.flag; }
 	uint32_t GetPktId() { return m_pkt_header.pkt_id; }
-	uint16_t GetReqTime() { return m_pkt_header.req_time; }
     uint32_t GetSeqNo() { return m_pkt_header.seq_no; }
 
 	void SetVersion(uint16_t version);
 	void SetFlag(uint16_t flag);
-    void SetReqTime(uint32_t req_time);
     void SetSeqNo(uint32_t seq_no);
-
-    void SetPktHeader(PktBase* pPkt);
    
 	void WriteHeader();
 

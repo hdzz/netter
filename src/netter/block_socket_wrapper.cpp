@@ -32,8 +32,7 @@ static int wait_connect_complete(int sock_fd, uint32_t timeout)
 
 net_handle_t connect_with_timeout(const char* server_ip, uint16_t port, uint32_t timeout)
 {
-    printf("connect_with_timeout, server_ip=%s, port=%d, timeout=%d\n",
-        server_ip, port, timeout);
+    printf("connect_with_timeout, server_addr=%s:%d, timeout=%d\n",server_ip, port, timeout);
     
 	net_handle_t sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock_fd == INVALID_SOCKET) {
@@ -41,20 +40,13 @@ net_handle_t connect_with_timeout(const char* server_ip, uint16_t port, uint32_t
 		return NETLIB_INVALID_HANDLE;
 	}
     
-    int optval = 1;
-    setsockopt(sock_fd, IPPROTO_TCP, TCP_NODELAY, (const char*)&optval, sizeof(int));
-    
-    int ret = fcntl(sock_fd, F_SETFL, O_NONBLOCK | fcntl(sock_fd, F_GETFL));
-    if (ret == -1) {
-        printf("set nonblock failed, errno=%d\n", errno);
-        close(sock_fd);
-        return NETLIB_INVALID_HANDLE;
-    }
+    BaseSocket::SetNoDelay(sock_fd);
+    BaseSocket::SetNonblock(sock_fd, true);
     
 	sockaddr_in serv_addr;
     BaseSocket::SetAddr(server_ip, port, &serv_addr);
     
-    ret = connect(sock_fd, (sockaddr*)&serv_addr, sizeof(serv_addr));
+    int ret = connect(sock_fd, (sockaddr*)&serv_addr, sizeof(serv_addr));
 	if (ret == -1) {
         if ((errno != EINPROGRESS) || wait_connect_complete(sock_fd, timeout)) {
             printf("connect failed, err_code=%d\n", errno);
@@ -63,12 +55,7 @@ net_handle_t connect_with_timeout(const char* server_ip, uint16_t port, uint32_t
         }
 	}
 	
-    ret = fcntl(sock_fd, F_SETFL, ~O_NONBLOCK & fcntl(sock_fd, F_GETFL));
-    if (ret == -1) {
-        printf("set block failed, errno=%d\n", errno);
-        close(sock_fd);
-        return NETLIB_INVALID_HANDLE;
-    }
+    BaseSocket::SetNonblock(sock_fd, false);
     
 	return sock_fd;
 }
@@ -137,7 +124,7 @@ int block_send_all(net_handle_t handle, void* buf, int len)
         
 		int ret = (int)send(handle, (char*)buf + offset, send_size, 0);
 		if (ret < 0) {
-            printf("netlib_block_send failed, errno=%d\n", errno);
+            printf("send failed, errno=%d\n", errno);
 			break;
 		} else if (ret == 0) {
             printf("send len = 0\n");
@@ -161,7 +148,7 @@ int block_recv_all(net_handle_t handle, void* buf, int len)
     while (received_len != len) {
         int ret = (int)recv(handle, (char*)buf + received_len, len - received_len, 0);
         if (ret < 0) {
-            printf("netlib_block_recv failed, errno=%d\n", errno);
+            printf("recv failed, errno=%d\n", errno);
             return -1;
         } else if (ret == 0) {
             printf("peer close\n");
