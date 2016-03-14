@@ -1,12 +1,12 @@
-//
-//  HttpParseWrapper.h
-//
-//  Created by jianqing.du on 13-9-29.
-//  Copyright (c) 2013年 ziteng. All rights reserved.
-//
+/*
+ * http_parser_wrapper.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __HTTP_PARSER_WRAPPER_H__
-#define __HTTP_PARSER_WRAPPER_H__
+#ifndef __NETTER_HTTP_PARSER_WRAPPER_H__
+#define __NETTER_HTTP_PARSER_WRAPPER_H__
 
 #include "util.h"
 #include "http_parser.h"

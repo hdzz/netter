@@ -1,13 +1,12 @@
-//
-//  PktDefinition.h
-//  mogucache
-//
-//  Created by jianqing.du on 15-7-22.
-//  Copyright (c) 2015年 mgj. All rights reserved.
-//
+/*
+ * pkt_definition.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __PKT_DEFINITION_H__
-#define __PKT_DEFINITION_H__
+#ifndef __NETTER_PKT_DEFINITION_H__
+#define __NETTER_PKT_DEFINITION_H__
 
 #include "pkt_base.h"
 

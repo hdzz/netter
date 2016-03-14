@@ -1,3 +1,10 @@
+/*
+ * util.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
+
 #include "util.h"
 
 uint64_t get_tick_count()

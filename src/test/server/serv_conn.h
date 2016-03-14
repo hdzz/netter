@@ -1,13 +1,12 @@
-//
-//  ServConn.h
-//  EventLoop
-//
-//  Created by ziteng on 16-3-3.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * serv_conn.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __EventLoop__ServConn_H__
-#define __EventLoop__ServConn_H__
+#ifndef __TEST_SERV_CONN_H__
+#define __TEST_SERV_CONN_H__
 
 #include "base_conn.h"
 

@@ -1,13 +1,12 @@
-//
-//  simple_buffer.h
-//  netter
-//
-//  Created by ziteng on 16-3-12.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * simple_buffer.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __netter__simple_buffer_H__
-#define __netter__simple_buffer_H__
+#ifndef __NETTER_SIMPLE_BUFFER_H__
+#define __NETTER_SIMPLE_BUFFER_H__
 
 #include "ostype.h"
 

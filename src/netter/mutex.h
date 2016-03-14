@@ -1,13 +1,12 @@
-//
-//  mutex.h
-//  EventLoop
-//
-//  Created by ziteng on 16-3-2.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * mutex.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __EventLoop__mutex_H__
-#define __EventLoop__mutex_H__
+#ifndef __NETTER_MUTEX_H__
+#define __NETTER_MUTEX_H__
 
 #include <pthread.h>
 
@@ -27,6 +26,32 @@ public:
     ~MutexGuard() { mutex_.Unlock(); }
 private:
     Mutex&   mutex_;
+};
+
+class RwMutex {
+public:
+    RwMutex() { pthread_rwlock_init(&rw_mutex_, NULL); }
+    ~RwMutex() { pthread_rwlock_destroy(&rw_mutex_); }
+    
+    void RdLock() { pthread_rwlock_rdlock(&rw_mutex_); }
+    void WrLock() { pthread_rwlock_wrlock(&rw_mutex_); }
+    void Unlock() { pthread_rwlock_unlock(&rw_mutex_); }
+private:
+    pthread_rwlock_t rw_mutex_;
+};
+
+class RwMutexGuard {
+public:
+    RwMutexGuard(RwMutex& mtx, bool rdlock) : rw_mutex_(mtx) {
+        if (rdlock) {
+            rw_mutex_.RdLock();
+        } else {
+            rw_mutex_.WrLock();
+        }
+    }
+    ~RwMutexGuard() { rw_mutex_.Unlock(); }
+private:
+    RwMutex&    rw_mutex_;
 };
 
 #endif

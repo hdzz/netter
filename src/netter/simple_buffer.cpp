@@ -1,10 +1,9 @@
-//
-//  simple_buffer.cpp
-//  netter
-//
-//  Created by ziteng on 16-3-12.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * simple_buffer.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include "simple_buffer.h"
 #include <stdlib.h>

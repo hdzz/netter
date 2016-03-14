@@ -1,3 +1,10 @@
+/*
+ * base_socket.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
+
 #include <assert.h>
 #include "base_socket.h"
 #include "event_loop.h"
@@ -76,7 +83,7 @@ net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t
 
 	m_state = SOCKET_STATE_LISTENING;
 
-	printf("CBaseSocket::Listen on %s:%d\n", server_ip, port);
+	printf("BaseSocket::Listen on %s:%d\n", server_ip, port);
 
     m_event_loop = get_main_event_loop();
 	m_event_loop->AddEvent(m_socket, SOCKET_READ | SOCKET_EXCEP | SOCKET_ADD_CONN, this);
@@ -86,7 +93,7 @@ net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t
 net_handle_t BaseSocket::Connect(const char* server_ip, uint16_t port, callback_t callback, void* callback_data,
 		const char* local_ip, uint16_t local_port)
 {
-	printf("CBaseSocket::Connect, server_ip=%s, port=%d\n", server_ip, port);
+	printf("BaseSocket::Connect, server_ip=%s, port=%d\n", server_ip, port);
 
 	m_remote_ip = server_ip;
 	m_remote_port = port;

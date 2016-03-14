@@ -1,5 +1,12 @@
-#ifndef __UTIL_H__
-#define __UTIL_H__
+/*
+ * util.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
+
+#ifndef __NETTER_UTIL_H__
+#define __NETTER_UTIL_H__
 
 #include "ostype.h"
 #include <string>

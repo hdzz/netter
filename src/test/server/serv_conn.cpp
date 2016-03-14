@@ -1,10 +1,9 @@
-//
-//  ServConn.cpp
-//  EventLoop
-//
-//  Created by ziteng on 16-3-3.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * serv_conn.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include "serv_conn.h"
 #include "pkt_definition.h"

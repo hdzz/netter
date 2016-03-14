@@ -1,10 +1,9 @@
-//
-//  simple_log.cpp
-//  EventLoop
-//
-//  Created by ziteng on 16-3-11.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * simple_log.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include "simple_log.h"
 #include <sys/stat.h>

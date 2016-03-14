@@ -1,12 +1,12 @@
 /*
- * ThreadPool.h
+ * thread_pool.h
  *
- *  Created on: 2014年7月21日
+ *  Created on: 2016-3-14
  *      Author: ziteng
  */
 
-#ifndef THREADPOOL_H_
-#define THREADPOOL_H_
+#ifndef __NETTER_THREAD_POOL_H__
+#define __NETTER_THREAD_POOL_H__
 #include "ostype.h"
 #include <pthread.h>
 #include <list>

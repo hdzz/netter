@@ -1,6 +1,12 @@
-// OS dependant type definition
-#ifndef __OS_TYPE_H__
-#define __OS_TYPE_H__
+/*
+ * ostype.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
+
+#ifndef __NETTER_OS_TYPE_H__
+#define __NETTER_OS_TYPE_H__
 
 #include <sys/time.h>
 #include <pthread.h>

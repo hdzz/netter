@@ -1,7 +1,7 @@
 /*
- * ThreadPool.cpp
+ * thread_pool.cpp
  *
- *  Created on: 2014年7月21日
+ *  Created on: 2016-3-14
  *      Author: ziteng
  */
 

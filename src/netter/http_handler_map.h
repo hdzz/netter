@@ -1,13 +1,12 @@
 /*
- * HttpHandlerMap.h
+ * http_handler_map.h
  *
- *  Created on: 2015-03-13
+ *  Created on: 2016-3-14
  *      Author: ziteng
  */
 
-#ifndef __HTTP_HANDLER_MAP_H__
-#define __HTTP_HANDLER_MAP_H__
-
+#ifndef __NETTER_HTTP_HANDLER_MAP_H__
+#define __NETTER_HTTP_HANDLER_MAP_H__
 
 #include "util.h"
 #include "http_conn.h"

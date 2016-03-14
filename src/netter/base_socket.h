@@ -1,9 +1,12 @@
 /*
- *  a wrap for non-block socket class for Windows, LINUX and MacOS X platform
+ * base_socket.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
  */
 
-#ifndef __BASE_SOCKET_H__
-#define __BASE_SOCKET_H__
+#ifndef __NETTER_BASE_SOCKET_H__
+#define __NETTER_BASE_SOCKET_H__
 
 #include <string>
 #include "ostype.h"

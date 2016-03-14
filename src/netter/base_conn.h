@@ -1,12 +1,12 @@
 /*
- * BaseConn.h
+ * base_conn.h
  *
- *  Created on: 2013-6-5
+ *  Created on: 2016-3-14
  *      Author: ziteng
  */
 
-#ifndef __BASE_CONN_H_
-#define __BASE_CONN_H_
+#ifndef __NETTER_BASE_CONN_H_
+#define __NETTER_BASE_CONN_H_
 
 #include "util.h"
 #include "simple_buffer.h"

@@ -1,10 +1,9 @@
-//
-//  byte_stream.cpp
-//  netter
-//
-//  Created by ziteng on 16-3-12.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * byte_stream.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include "byte_stream.h"
 

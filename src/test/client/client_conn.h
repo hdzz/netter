@@ -1,13 +1,12 @@
-//
-//  cache_conn.h
-//  mogucache
-//
-//  Created by ziteng on 15-12-28.
-//  Copyright (c) 2015年 mgj. All rights reserved.
-//
+/*
+ * client.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __MOGU_CACHE_CPP_SDK_CACHE_CONN_H__
-#define __MOGU_CACHE_CPP_SDK_CACHE_CONN_H__
+#ifndef __TEST_CLIENT_CONN_H__
+#define __TEST_CLIENT_CONN_H__
 
 #include "pkt_definition.h"
 #include "util.h"

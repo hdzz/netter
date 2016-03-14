@@ -1,12 +1,12 @@
 /*
- * HttpConn.h
+ * http_conn.h
  *
- *  Created on: 2015-03-13
+ *  Created on: 2016-3-14
  *      Author: ziteng
  */
 
-#ifndef __HTTP_CONN_H__
-#define __HTTP_CONN_H__
+#ifndef __NETTER_HTTP_CONN_H__
+#define __NETTER_HTTP_CONN_H__
 
 #include "util.h"
 #include "base_conn.h"

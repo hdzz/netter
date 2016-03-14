@@ -1,9 +1,9 @@
-//
-//  HttpParseWrapper.cpp
-//
-//  Created by jianqing.du on 13-9-29.
-//  Copyright (c) 2013年 ziteng. All rights reserved.
-//
+/*
+ * http_parser_wrapper.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include "http_parser_wrapper.h"
 #include "http_parser.h"

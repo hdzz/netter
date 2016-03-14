@@ -1,12 +1,12 @@
 /*
- * PktBase.h
+ * pkt_base.h
  *
- *  Created on: 2013-8-27
- *      Author: ziteng@mogujie.com
+ *  Created on: 2016-3-14
+ *      Author: ziteng
  */
 
-#ifndef __PKT_BASE_H__
-#define __PKT_BASE_H__
+#ifndef __NETTER_PKT_BASE_H__
+#define __NETTER_PKT_BASE_H__
 
 #include "simple_buffer.h"
 #include "byte_stream.h"

@@ -1,5 +1,12 @@
-#ifndef __NETLIB_H__
-#define __NETLIB_H__
+/*
+ * block_socket_wrapper.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
+
+#ifndef __NETTER_BLOCK_SOCKET_WRAPPER_H__
+#define __NETTER_BLOCK_SOCKET_WRAPPER_H__
 
 #include "ostype.h"
 

@@ -1,13 +1,12 @@
-//
-//  byte_stream.h
-//  netter
-//
-//  Created by ziteng on 16-3-12.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * byte_stream.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __netter__byte_stream_H__
-#define __netter__byte_stream_H__
+#ifndef __NETTER_BYTE_STREAM_H__
+#define __NETTER_BYTE_STREAM_H__
 
 #include "ostype.h"
 #include "util.h"

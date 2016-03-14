@@ -1,8 +1,8 @@
 /*
- * PktBase.cpp
+ * pkt_base.cpp
  *
- *  Created on: 2013-8-27
- *      Author: ziteng@mogujie.com
+ *  Created on: 2016-3-14
+ *      Author: ziteng
  */
 
 #include "pkt_base.h"

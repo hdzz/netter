@@ -1,10 +1,9 @@
-//
-//  PktDefinition.cpp
-//  mogucache
-//
-//  Created by jianqing.du on 15-7-22.
-//  Copyright (c) 2015年 mgj. All rights reserved.
-//
+/*
+ * pkt_definition.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include "pkt_definition.h"
 

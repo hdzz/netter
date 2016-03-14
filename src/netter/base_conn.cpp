@@ -1,8 +1,8 @@
 /*
- * BaseConn.cpp
+ * base_conn.cpp
  *
- *  Created on: 2013-6-5
- *      Author: ziteng@mogujie.com
+ *  Created on: 2016-3-14
+ *      Author: ziteng
  */
 
 #include "base_conn.h"

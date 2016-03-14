@@ -1,5 +1,12 @@
-#ifndef __EVENT_LOOP_H__
-#define __EVENT_LOOP_H__
+/*
+ * event_loop.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
+
+#ifndef __NETTER_EVENT_LOOP_H__
+#define __NETTER_EVENT_LOOP_H__
 
 #include "ostype.h"
 #include "mutex.h"

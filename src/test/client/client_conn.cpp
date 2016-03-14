@@ -1,10 +1,9 @@
-//
-//  cache_conn.cpp
-//  mogucache
-//
-//  Created by ziteng on 15-12-28.
-//  Copyright (c) 2015年 mgj. All rights reserved.
-//
+/*
+ * client_conn.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include <assert.h>
 #include "client_conn.h"

@@ -1,10 +1,9 @@
-//
-//  main.cpp
-//  EventLoop
-//
-//  Created by ziteng on 16-3-14.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * main.cpp
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
 #include <stdio.h>
 #include <stdlib.h>

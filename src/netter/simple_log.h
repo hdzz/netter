@@ -1,13 +1,12 @@
-//
-//  simple_log.h
-//  EventLoop
-//
-//  Created by ziteng on 16-3-11.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * simple_log.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __EventLoop__simple_log_H__
-#define __EventLoop__simple_log_H__
+#ifndef __NETTER_SIMPLE_LOG_H__
+#define __NETTER_SIMPLE_LOG_H__
 
 #include <stdio.h>
 #include <stdarg.h>

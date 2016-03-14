@@ -1,13 +1,12 @@
-//
-//  io_thread_resource.h
-//  EventLoop
-//
-//  Created by ziteng on 16-3-11.
-//  Copyright (c) 2016年 mgj. All rights reserved.
-//
+/*
+ * io_thread_resource.h
+ *
+ *  Created on: 2016-3-14
+ *      Author: ziteng
+ */
 
-#ifndef __EventLoop__io_thread_resource_H__
-#define __EventLoop__io_thread_resource_H__
+#ifndef __NETTER_IO_THREAD_RESOURCE_H__
+#define __NETTER_IO_THREAD_RESOURCE_H__
 
 #include <assert.h>
 
