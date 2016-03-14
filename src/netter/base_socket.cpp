@@ -163,7 +163,7 @@ int BaseSocket::Close()
     m_state = SOCKET_STATE_CLOSING;
 	m_event_loop->RemoveEvent(m_socket, SOCKET_ALL|SOCKET_DEL_CONN, this);
 	close(m_socket);
-    delete this;
+    ReleaseRef();
     
 	return 0;
 }

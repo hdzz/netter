@@ -300,14 +300,14 @@ void EventLoop::Start(uint32_t wait_timeout)
 	while (!stop_) {
 		nfds = kevent(event_fd_, NULL, 0, events, 1024, &timeout);
 
-		for (int i = 0; i < nfds; i++)
-		{
+		for (int i = 0; i < nfds; i++) {
 			BaseSocket* pSocket = (BaseSocket*)events[i].udata;
             if (!pSocket) {
                 _ReadWakeupData();
                 continue;
             }
 
+            pSocket->AddRef();
 			if (events[i].filter == EVFILT_READ)
 			{
 				//log("OnRead, socket=%d\n", ev_fd);
@@ -319,6 +319,7 @@ void EventLoop::Start(uint32_t wait_timeout)
 				//log("OnWrite, socket=%d\n", ev_fd);
 				pSocket->OnWrite();
 			}
+            pSocket->ReleaseRef();
 		}
 
 		_CheckTimer();
@@ -347,6 +348,7 @@ void EventLoop::Start(uint32_t wait_timeout)
                 continue;
             }
 
+            pSocket->AddRef();
 			if (events[i].events & EPOLLIN) {
 				//log("OnRead, socket=%d\n", ev_fd);
 				pSocket->OnRead();
@@ -361,6 +363,7 @@ void EventLoop::Start(uint32_t wait_timeout)
 				//log("OnClose, socket=%d\n", ev_fd);
 				pSocket->OnClose();
 			}
+            pSocket->ReleaseRef();
 		}
 
 		_CheckTimer();

@@ -9,6 +9,7 @@
 #define __NETTER_UTIL_H__
 
 #include "ostype.h"
+#include "mutex.h"
 #include <string.h>
 #include <strings.h>
 #include <string>
@@ -39,6 +40,42 @@ public:
 private:
 	uint32_t	error_code_;
 	string		error_msg_;
+};
+
+class RefCount
+{
+public:
+	RefCount() : ref_count_(1), mutex_(NULL) {}
+	virtual ~RefCount() {}
+    
+	void SetMutex(Mutex* mtx) { mutex_ = mtx; }
+
+	void AddRef() {
+        if (mutex_) {
+            mutex_->Lock();
+            ++ref_count_;
+            mutex_->Unlock();
+        } else {
+            ++ref_count_;
+        }
+    }
+    
+	void ReleaseRef() {
+        if (mutex_) {
+            MutexGuard mg(*mutex_);
+            --ref_count_;
+            if (ref_count_ == 0) {
+                delete this;
+            }
+        } else {
+            --ref_count_;
+            if (ref_count_ == 0)
+                delete this;
+        }
+    }
+private:
+	int		ref_count_;
+	Mutex*	mutex_;
 };
 
 uint64_t get_tick_count();

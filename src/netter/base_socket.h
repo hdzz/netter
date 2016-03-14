@@ -10,6 +10,7 @@
 
 #include <string>
 #include "ostype.h"
+#include "util.h"
 using std::string;
 
 enum
@@ -24,7 +25,7 @@ enum
 
 class EventLoop;
 
-class BaseSocket
+class BaseSocket : public RefCount
 {
 public:
 	BaseSocket();
