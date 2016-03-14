@@ -107,9 +107,9 @@ public:
             } else {
                 delete pPkt;
             }
-            uint64_t cost_tick = get_tick_count() - s_tick;
+            uint64_t c_tick = get_tick_count() - s_tick;
             
-            ++histogram[cost_tick];
+            ++histogram[c_tick];
         }
         uint64_t cost_tick = get_tick_count() - start_tick;
         

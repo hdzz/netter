@@ -42,6 +42,8 @@ public:
     int SendPkt(PktBase* pkt);    // 需要发送者自己delete pkt
     int Send(void* data, int len);
 
+    void SetHeartbeatInterval(int interval) { m_heartbeat_interval = interval; }
+    void SetConnTimerout(int timeout) { m_conn_timeout = timeout; }
     net_handle_t GetHandle() { return m_handle; }
     char* GetPeerIP() { return (char*)m_peer_ip.c_str(); }
     uint16_t GetPeerPort() { return m_peer_port; }
@@ -66,7 +68,9 @@ protected:
 	net_handle_t	m_handle;
 	bool			m_busy;
     bool            m_open;
-
+    int             m_heartbeat_interval;
+    int             m_conn_timeout;
+    
 	string			m_peer_ip;
 	uint16_t		m_peer_port;
 	SimpleBuffer	m_in_buf;

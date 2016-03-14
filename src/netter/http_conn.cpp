@@ -70,7 +70,7 @@ void HttpConn::OnRead()
 
 void HttpConn::OnTimer(uint64_t curr_tick)
 {
-	if (curr_tick > m_last_recv_tick + kConnTimeout) {
+	if (curr_tick > m_last_recv_tick + m_conn_timeout) {
 		printf("http connection timeout %s:%d\n", m_peer_ip.c_str(), m_peer_port);
 		Close();
 	}

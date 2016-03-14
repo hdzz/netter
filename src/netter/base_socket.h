@@ -97,6 +97,4 @@ private:
 	net_handle_t	m_handle;
 };
 
-BaseSocket* FindBaseSocket(net_handle_t handle);
-
 #endif

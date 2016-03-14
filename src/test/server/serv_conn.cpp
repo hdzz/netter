@@ -46,12 +46,13 @@ void init_server_thread_pool(int worker_thread_num)
 
 ServConn::ServConn()
 {
-    printf("ServConn::ServConn\n");
+    //m_conn_timeout = 10000;
+    //printf("ServConn::ServConn\n");
 }
 
 ServConn::~ServConn()
 {
-    printf("ServConn::~ServConn, handle=%d\n", m_handle);
+    //printf("ServConn::~ServConn, handle=%d\n", m_handle);
 }
 
 void ServConn::OnConnect(BaseSocket* base_socket)

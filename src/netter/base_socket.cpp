@@ -10,22 +10,13 @@
 #include "event_loop.h"
 #include "util.h"
 
-// replace socket with handle to notify upper layer, cause socket will be reused
+// replace socket with handle to notify upper layer, cause socket will be reused, 
 // while handle will be increasing whenever a new BaseSocket is created to avoid confusion
-
 static atomic<net_handle_t> g_handle_allocator {1};
-
-BaseSocket* FindBaseSocket(net_handle_t handle)
-{
-    EventLoop* el = get_io_event_loop(handle);
-    return el->FindBaseSocket(handle);
-}
-
-//////////////////////////////
 
 BaseSocket::BaseSocket()
 {
-	printf("BaseSocket::BaseSocket\n");
+	//printf("BaseSocket::BaseSocket\n");
 	m_socket = INVALID_SOCKET;
 	m_state = SOCKET_STATE_IDLE;
 	
@@ -44,7 +35,7 @@ BaseSocket::BaseSocket()
 
 BaseSocket::~BaseSocket()
 {
-	printf("BaseSocket::~BaseSocket, socket=%d\n", m_socket);
+	//printf("BaseSocket::~BaseSocket, socket=%d\n", m_socket);
 }
 
 net_handle_t BaseSocket::Listen(const char* server_ip, uint16_t port, callback_t callback, void* callback_data)

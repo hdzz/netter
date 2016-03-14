@@ -99,18 +99,20 @@ void init_thread_base_conn(int io_thread_num)
 //////////////////////////
 BaseConn::BaseConn()
 {
-	printf("BaseConn::BaseConn\n");
+	//printf("BaseConn::BaseConn\n");
 
     m_open = false;
 	m_busy = false;
 	m_handle = NETLIB_INVALID_HANDLE;
-
+    m_heartbeat_interval = kHeartBeartInterval;
+    m_conn_timeout = kConnTimeout;
+    
 	m_last_send_tick = m_last_recv_tick = get_tick_count();
 }
 
 BaseConn::~BaseConn()
 {
-	printf("BaseConn::~BaseConn, handle=%d\n", m_handle);
+	//printf("BaseConn::~BaseConn, handle=%d\n", m_handle);
     
 }
 
@@ -286,12 +288,12 @@ void BaseConn::OnClose()
 void BaseConn::OnTimer(uint64_t curr_tick)
 {
     //printf("OnTimer, curr_tick=%llu\n",curr_tick);
-    if (curr_tick > m_last_send_tick + kHeartBeartInterval) {
+    if (curr_tick > m_last_send_tick + m_heartbeat_interval) {
         PktHeartBeat pkt;
         SendPkt(&pkt);
     }
     
-    if (curr_tick > m_last_recv_tick + kConnTimeout) {
+    if (curr_tick > m_last_recv_tick + m_conn_timeout) {
         printf("connection timeout, handle=%d\n", m_handle);
         Close();
         return;
