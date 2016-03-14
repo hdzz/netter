@@ -151,7 +151,7 @@ int BaseSocket::Recv(void* buf, int len)
 {
     int n = (int)recv(m_socket, (char*)buf, len, 0);
     if (n == 0) {
-        m_state = SOCKET_STATE_CLOSING;
+        m_state = SOCKET_STATE_PEER_CLOSING;
     }
     
     return n;
@@ -184,7 +184,7 @@ void BaseSocket::OnRead()
 			m_callback(m_callback_data, NETLIB_MSG_READ, m_handle, NULL);
             
             // 处理数据包和FIN包一起过来的场景，这样只能在recv返回0才能判断对端关闭了socket
-            if (m_state == SOCKET_STATE_CLOSING) {
+            if (m_state == SOCKET_STATE_PEER_CLOSING) {
                 m_callback(m_callback_data, NETLIB_MSG_CLOSE, m_handle, NULL);
             }
 		}

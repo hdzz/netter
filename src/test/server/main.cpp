@@ -5,6 +5,10 @@
  *      Author: ziteng
  */
 
+/*
+    use ./client to presure test TCP server
+    use ab -n 10000 -c 10 to presure test HTTP server
+ */
 #include <iostream>
 #include <stdlib.h>
 #include <assert.h>

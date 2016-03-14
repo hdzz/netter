@@ -10,9 +10,6 @@
 
 HttpParserWrapper::HttpParserWrapper()
 {
-    http_parser_init(&m_http_parser, HTTP_REQUEST);
-    m_http_parser.data = this;
-    
 	memset(&m_settings, 0, sizeof(m_settings));
 	m_settings.on_url = OnUrl;
 	m_settings.on_header_field = OnHeaderField;
@@ -24,7 +21,9 @@ HttpParserWrapper::HttpParserWrapper()
 
 void HttpParserWrapper::ParseHttpContent(const char* buf, uint32_t len)
 {
-	// 这个是单件模式，所以每次解析前都要初始化
+    http_parser_init(&m_http_parser, HTTP_REQUEST);
+    m_http_parser.data = this;
+    
     m_read_all = false;
     
     m_total_length = 0;
