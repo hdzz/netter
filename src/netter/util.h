@@ -9,6 +9,8 @@
 #define __NETTER_UTIL_H__
 
 #include "ostype.h"
+#include <string.h>
+#include <strings.h>
 #include <string>
 #include <list>
 #include <vector>

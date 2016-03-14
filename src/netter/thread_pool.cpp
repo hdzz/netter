@@ -116,11 +116,11 @@ int ThreadPool::Init(uint32_t thread_num)
 
 void ThreadPool::Destory()
 {
-    for (int i = 0; i < m_thread_num; ++i) {
+    for (uint32_t i = 0; i < m_thread_num; ++i) {
         m_worker_threads[i].Stop();
     }
     
-    for (int i = 0; i < m_thread_num; ++i) {
+    for (uint32_t i = 0; i < m_thread_num; ++i) {
         m_worker_threads[i].Stop();
         pthread_join(m_worker_threads[i].GetThreadId(), NULL);
     }

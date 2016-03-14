@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <atomic>
 #include "base_socket.h"
 #include "event_loop.h"
 #include "util.h"
@@ -252,7 +253,7 @@ void BaseSocket::SetNonblock(int fd, bool nonblock)
     }
 
 	if (ret == SOCKET_ERROR) {
-		printf("_SetNonblock failed, err_code=%d\n", errno);
+		printf("SetNonblock failed, err_code=%d\n", errno);
 	}
 }
 
@@ -261,7 +262,7 @@ void BaseSocket::SetReuseAddr(int fd)
 	int reuse = 1;
 	int ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse, sizeof(reuse));
 	if (ret == SOCKET_ERROR) {
-		printf("_SetReuseAddr failed, err_code=%d\n", errno);
+		printf("SetReuseAddr failed, err_code=%d\n", errno);
 	}
 }
 
@@ -270,7 +271,7 @@ void BaseSocket::SetNoDelay(int fd)
 	int nodelay = 1;
 	int ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
 	if (ret == SOCKET_ERROR) {
-		printf("_SetNoDelay failed, err_code=%d\n", errno);
+		printf("SetNoDelay failed, err_code=%d\n", errno);
 	}
 }
 

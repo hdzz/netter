@@ -43,7 +43,7 @@ void SimpleLog::Init(LogLevel level, string path)
     // create path if not exist
     string parent_path;
     struct stat stat_buf;
-    for (int i = 0; i < log_path_.size(); ++i) {
+    for (size_t i = 0; i < log_path_.size(); ++i) {
         char ch = log_path_.at(i);
         parent_path.append(1, ch);
         

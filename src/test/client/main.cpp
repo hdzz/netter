@@ -76,10 +76,10 @@ public:
     
     void PrintResult(const string& cmd_name, uint64_t cost_tick, map<uint64_t, int>& histogram) {
         MutexGuard mg(g_print_mutex);
-        fprintf(stderr, "(thread_id=%ld) %d %s takes %llu ms\n",
-                (long)m_thread_id, g_config.total_query_count, cmd_name.c_str(), cost_tick);
+        fprintf(stderr, "(thread_id=%ld) %d %s takes %d ms\n",
+                (long)m_thread_id, g_config.total_query_count, cmd_name.c_str(), (int)cost_tick);
         for (map<uint64_t, int>::iterator it = histogram.begin(); it != histogram.end(); ++it) {
-            fprintf(stderr, "%llums=%d\n", it->first, it->second);
+            fprintf(stderr, "%d ms = %d\n", (int)it->first, it->second);
         }
         fprintf(stderr, "\n");
     }
