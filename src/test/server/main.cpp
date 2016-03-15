@@ -1,5 +1,5 @@
 /*
- * mai.cpp
+ * main.cpp
  *
  *  Created on: 2016-3-14
  *      Author: ziteng

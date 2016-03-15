@@ -220,13 +220,18 @@ void EventLoop::AddEvent(int fd, uint8_t socket_event, BaseSocket* pSocket)
     if (IsInLoopThread()) {
 #ifdef __APPLE__
         struct kevent ke;
+        void* udata = NULL;
+        if (pSocket) {
+            udata = reinterpret_cast<void*>(pSocket->GetHandle());
+        }
+        
         if ((socket_event & SOCKET_READ) != 0) {
-            EV_SET(&ke, fd, EVFILT_READ, EV_ADD, 0, 0, (void*)pSocket);
+            EV_SET(&ke, fd, EVFILT_READ, EV_ADD, 0, 0, udata);
             kevent(event_fd_, &ke, 1, NULL, 0, NULL);
         }
 
         if ((socket_event & SOCKET_WRITE) != 0) {
-            EV_SET(&ke, fd, EVFILT_WRITE, EV_ADD, 0, 0, (void*)pSocket);
+            EV_SET(&ke, fd, EVFILT_WRITE, EV_ADD, 0, 0, udata);
             kevent(event_fd_, &ke, 1, NULL, 0, NULL);
         }
         
@@ -263,14 +268,18 @@ void EventLoop::RemoveEvent(int fd, uint8_t socket_event, BaseSocket* pSocket)
 {
 #ifdef __APPLE__
 	struct kevent ke;
-
+    void* udata = NULL;
+    if (pSocket) {
+        udata = reinterpret_cast<void*>(pSocket->GetHandle());
+    }
+    
 	if ((socket_event & SOCKET_READ) != 0) {
-		EV_SET(&ke, fd, EVFILT_READ, EV_DELETE, 0, 0, pSocket);
+		EV_SET(&ke, fd, EVFILT_READ, EV_DELETE, 0, 0, udata);
 		kevent(event_fd_, &ke, 1, NULL, 0, NULL);
 	}
 
 	if ((socket_event & SOCKET_WRITE) != 0) {
-		EV_SET(&ke, fd, EVFILT_WRITE, EV_DELETE, 0, 0, pSocket);
+		EV_SET(&ke, fd, EVFILT_WRITE, EV_DELETE, 0, 0, udata);
 		kevent(event_fd_, &ke, 1, NULL, 0, NULL);
 	}
 #else
@@ -301,22 +310,26 @@ void EventLoop::Start(uint32_t wait_timeout)
 		nfds = kevent(event_fd_, NULL, 0, events, 1024, &timeout);
 
 		for (int i = 0; i < nfds; i++) {
-			BaseSocket* pSocket = (BaseSocket*)events[i].udata;
-            if (!pSocket) {
+            if (!events[i].udata) {
                 _ReadWakeupData();
                 continue;
             }
-
+            
+            /* 
+             *** udata的参数是handle而不是BaseSocket指针 ***
+             因为kevent返回事件时，同一个socket的读写是在两个kevent结构里面返回，
+             可能处理完第一个事件时已经delete了BaseSocket对象，再处理第二个事件会crash
+             用handle可以在处理第二个事件时，找不到BaseSocket，从而避免操作已删掉的BaseSocket对象
+             */
+            net_handle_t handle = (int)reinterpret_cast<long>(events[i].udata);
+            BaseSocket* pSocket = FindBaseSocket(handle);
+            if (!pSocket)
+                continue;
+            
             pSocket->AddRef();
-			if (events[i].filter == EVFILT_READ)
-			{
-				//log("OnRead, socket=%d\n", ev_fd);
+			if (events[i].filter == EVFILT_READ) {
 				pSocket->OnRead();
-			}
-
-			if (events[i].filter == EVFILT_WRITE)
-			{
-				//log("OnWrite, socket=%d\n", ev_fd);
+			} else if (events[i].filter == EVFILT_WRITE) {
 				pSocket->OnWrite();
 			}
             pSocket->ReleaseRef();

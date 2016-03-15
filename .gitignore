@@ -2,3 +2,4 @@
 *.a
 src/test/server/server
 src/test/client/client
+src/test/nonblock_client/nb_client
