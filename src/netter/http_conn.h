@@ -28,7 +28,6 @@ public:
 	virtual ~HttpConn();
 
 	virtual void OnRead();                      // http数据包解析不一样，需要override
-	virtual void OnTimer(uint64_t curr_tick);   // 不需要发送heartbeat，需要override
 };
 
 void init_thread_http_conn(int io_thread_num);

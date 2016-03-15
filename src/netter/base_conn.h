@@ -31,7 +31,7 @@ void connect_callback(void* callback_data, uint8_t msg, uint32_t handle, void* p
 	}
 }
 
-class BaseConn
+class BaseConn : public RefCount
 {
 public:
 	BaseConn();
@@ -61,7 +61,7 @@ public:
     static int SendPkt(net_handle_t handle, PktBase* pkt);
 protected:
     void _RecvData();
-    void _ParseWholePkt();
+    void _ParsePkt();
     
 protected:
     BaseSocket*     m_base_socket;

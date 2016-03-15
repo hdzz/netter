@@ -41,7 +41,6 @@ void HttpConn::OnRead()
     
     HttpParserWrapper* parser_wrapper = g_http_parser_wrappers.GetIOResource(m_handle);
     parser_wrapper->ParseHttpContent(in_buf, buf_len);
-    printf("parser=0x%lx\n", (long)parser_wrapper);
     
     if (parser_wrapper->IsReadAll()) {
         string handler_url;     // URL里面'?'前面部分内容，没有'?'则是整个URL
@@ -68,10 +67,3 @@ void HttpConn::OnRead()
     }
 }
 
-void HttpConn::OnTimer(uint64_t curr_tick)
-{
-	if (curr_tick > m_last_recv_tick + m_conn_timeout) {
-		printf("http connection timeout %s:%d\n", m_peer_ip.c_str(), m_peer_port);
-		Close();
-	}
-}

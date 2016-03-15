@@ -55,30 +55,31 @@ void conn_callback(void* callback_data, uint8_t msg, uint32_t handle, void* pPar
 	if (!pConn)
 		return;
 
-	switch (msg)
-	{
-	case NETLIB_MSG_CONFIRM:
-		pConn->OnConfirm();
-		break;
-	case NETLIB_MSG_READ:
-		pConn->OnRead();
-		break;
-	case NETLIB_MSG_WRITE:
-		pConn->OnWrite();
-		break;
-	case NETLIB_MSG_CLOSE:
-		pConn->OnClose();
-		break;
-    case NETLIB_MSG_TIMER:
-        {
-            uint64_t curr_tick = *(uint64_t*)pParam;
-            pConn->OnTimer(curr_tick);
+    pConn->AddRef();
+	switch (msg) {
+        case NETLIB_MSG_CONFIRM:
+            pConn->OnConfirm();
             break;
-        }
-	default:
-		printf("!!!conn_callback error msg: %d\n", msg);
-		break;
+        case NETLIB_MSG_READ:
+            pConn->OnRead();
+            break;
+        case NETLIB_MSG_WRITE:
+            pConn->OnWrite();
+            break;
+        case NETLIB_MSG_CLOSE:
+            pConn->OnClose();
+            break;
+        case NETLIB_MSG_TIMER:
+            {
+                uint64_t curr_tick = *(uint64_t*)pParam;
+                pConn->OnTimer(curr_tick);
+                break;
+            }
+        default:
+            printf("!!!conn_callback error msg: %d\n", msg);
+            break;
 	}
+    pConn->ReleaseRef();
 }
 
 void init_thread_base_conn(int io_thread_num)
@@ -145,7 +146,7 @@ void BaseConn::Close()
     printf("Client Close: handle=%d\n", m_handle);
     m_base_socket->Close();
     m_handle = NETLIB_INVALID_HANDLE;
-    delete this;
+    ReleaseRef();
 }
 
 int BaseConn::SendPkt(PktBase* pkt)
@@ -248,7 +249,7 @@ void BaseConn::OnRead()
 {
 	_RecvData();
 
-	_ParseWholePkt();
+	_ParsePkt();
 }
 
 void BaseConn::OnWrite()
@@ -288,11 +289,6 @@ void BaseConn::OnClose()
 void BaseConn::OnTimer(uint64_t curr_tick)
 {
     //printf("OnTimer, curr_tick=%llu\n",curr_tick);
-    if (curr_tick > m_last_send_tick + m_heartbeat_interval) {
-        PktHeartBeat pkt;
-        SendPkt(&pkt);
-    }
-    
     if (curr_tick > m_last_recv_tick + m_conn_timeout) {
         printf("connection timeout, handle=%d\n", m_handle);
         Close();
@@ -316,7 +312,7 @@ void BaseConn::_RecvData()
 	}
 }
 
-void BaseConn::_ParseWholePkt()
+void BaseConn::_ParsePkt()
 {
     try {
 		PktBase* pPkt = NULL;
