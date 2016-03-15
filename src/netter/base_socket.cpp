@@ -231,14 +231,19 @@ void BaseSocket::OnWrite()
 
 void BaseSocket::OnClose()
 {
+    if (m_state == SOCKET_STATE_CLOSING) {
+        return;
+    }
+    
 	m_state = SOCKET_STATE_CLOSING;
 	m_callback(m_callback_data, NETLIB_MSG_CLOSE, m_handle, NULL);
 }
 
 void BaseSocket::OnTimer(uint64_t curr_tick)
 {
-    if (m_state != SOCKET_STATE_LISTENING)
+    if (m_state != SOCKET_STATE_LISTENING) {
         m_callback(m_callback_data, NETLIB_MSG_TIMER, m_handle, &curr_tick);
+    }
 }
 
 

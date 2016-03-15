@@ -15,6 +15,9 @@ IoThreadResource<HttpParserWrapper> g_http_parser_wrappers;
 
 void init_thread_http_conn(int io_thread_num)
 {
+    if (g_http_parser_wrappers.IsInited())
+        return;
+    
 	g_http_handler_map = HttpHandlerMap::getInstance();
     g_http_parser_wrappers.Init(io_thread_num);
 }

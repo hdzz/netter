@@ -41,6 +41,10 @@ static void* event_loop_thread(void* arg)
 
 void init_thread_event_loops(int io_thread_num)
 {
+    if (g_event_loops.IsInited())
+        return;
+    
+    signal(SIGPIPE, SIG_IGN);
     printf("main thread: %ld\n", (long)pthread_self());
     
     g_event_loops.Init(io_thread_num);

@@ -84,6 +84,9 @@ void conn_callback(void* callback_data, uint8_t msg, uint32_t handle, void* pPar
 
 void init_thread_base_conn(int io_thread_num)
 {
+    if (g_pending_pkt_mgr.IsInited())
+        return;
+    
     g_pending_pkt_mgr.Init(io_thread_num);
     
     if (io_thread_num > 0) {
