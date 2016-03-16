@@ -149,6 +149,7 @@ void BaseConn::Close()
     printf("Client Close: handle=%d\n", m_handle);
     m_base_socket->Close();
     m_handle = NETLIB_INVALID_HANDLE;
+    m_open = false;
     ReleaseRef();
 }
 

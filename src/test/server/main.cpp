@@ -19,6 +19,7 @@
 #include "http_handler_map.h"
 #include "http_parser_wrapper.h"
 #include "simple_log.h"
+#include "base_listener.h"
 
 #define TEST_URL    "/test"
 
@@ -93,6 +94,9 @@ int main(int argc, char* argv[])
     long cpu_num = sysconf(_SC_NPROCESSORS_CONF);
     printf("cpu_num=%ld\n", cpu_num);
     
+    //init_simple_log(kLogLevelDebug, "log");
+    //log_message(kLogLevelInfo, "test");
+    
     init_default_config();
     parse_cmd_line(argc, argv);
     
@@ -105,11 +109,8 @@ int main(int argc, char* argv[])
     HttpHandlerMap* handler_map = HttpHandlerMap::getInstance();
     handler_map->AddHandler(TEST_URL, handle_http_test);
     
-    BaseSocket tcp_socket;
-    tcp_socket.Listen(g_config.host.c_str(), g_config.port, connect_callback<ServConn>, NULL);
-    
-    BaseSocket http_socket;
-    http_socket.Listen(g_config.host.c_str(), g_config.http_port, connect_callback<HttpConn>, NULL);
+    start_listen<ServConn>(g_config.host, g_config.port);
+    start_listen<HttpConn>(g_config.host, g_config.http_port);
     
     get_main_event_loop()->Start(1000);
     

@@ -46,4 +46,9 @@ private:
     Mutex       mutex_;
 };
 
+// if application only has one log path, use these two api to simplify the log process
+extern SimpleLog g_simple_log;
+void init_simple_log(LogLevel level, string path);
+#define log_message(level, fmt, ...) g_simple_log.LogMessage(level, fmt, ##__VA_ARGS__)
+
 #endif

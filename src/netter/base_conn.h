@@ -20,17 +20,6 @@ const int kReadBufSize = 2048;
 
 class PktBase;
 
-template <class T>
-void connect_callback(void* callback_data, uint8_t msg, uint32_t handle, void* pParam)
-{
-	if (msg == NETLIB_MSG_CONNECT) {
-		T* pConn = new T();
-		pConn->OnConnect((BaseSocket*)pParam);
-	} else {
-		printf("!!!error msg: %d\n", msg);
-	}
-}
-
 class BaseConn : public RefCount
 {
 public:

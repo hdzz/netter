@@ -126,3 +126,9 @@ bool SimpleLog::IsNewDay(time_t current_time)
     }
 }
 
+SimpleLog  g_simple_log;
+
+void init_simple_log(LogLevel level, string path)
+{
+    g_simple_log.Init(level, path);
+}

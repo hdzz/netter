@@ -131,5 +131,7 @@ int main(int argc, char* argv[])
         pthread_join(threads[i].GetThreadId(), NULL);
     }
     
+    delete [] threads;
+    
     return 0;
 }
