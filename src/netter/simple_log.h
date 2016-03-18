@@ -31,17 +31,16 @@ public:
     virtual ~SimpleLog();
     
     void Init(LogLevel level, string path);
-    
     void LogMessage(LogLevel level, const char* fmt, ...);
-    
+    void SetLogLevel(LogLevel level) { log_level_ = level; }
 private:
     void OpenFile();
     bool IsNewDay(time_t current_time);
 private:
+    LogLevel    log_level_;
     string      log_path_;
     FILE*       log_file_;
     time_t      last_log_time_;
-    LogLevel    current_log_level_;
     char        log_buf_[kMaxLogLineSize];
     Mutex       mutex_;
 };

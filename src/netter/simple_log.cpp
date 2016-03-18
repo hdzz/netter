@@ -15,7 +15,7 @@ SimpleLog::SimpleLog()
 {
     log_file_ = NULL;
     last_log_time_ = 0;
-    current_log_level_ = kLogLevelDebug;
+    log_level_ = kLogLevelDebug;
 }
 
 SimpleLog::~SimpleLog()
@@ -34,7 +34,7 @@ void SimpleLog::Init(LogLevel level, string path)
         return;
     }
     
-    current_log_level_ = level;
+    log_level_ = level;
     log_path_ = path;
     size_t len = log_path_.size();
     if (log_path_.at(len - 1) != '/') {
@@ -61,7 +61,7 @@ void SimpleLog::Init(LogLevel level, string path)
 
 void SimpleLog::LogMessage(LogLevel level, const char* fmt, ...)
 {
-    if (level > current_log_level_) {
+    if (level > log_level_) {
         return;
     }
     
@@ -73,8 +73,9 @@ void SimpleLog::LogMessage(LogLevel level, const char* fmt, ...)
 	gettimeofday(&tval, NULL);
     
     MutexGuard mg(mutex_);
-	int prefix_len = snprintf(log_buf_, sizeof(log_buf_), "%02d:%02d:%02d.%03d %s ", tm_now.tm_hour, tm_now.tm_min,
-                              tm_now.tm_sec, (int)tval.tv_usec / 1000, kLogLevelName[level].c_str());
+	int prefix_len = snprintf(log_buf_, sizeof(log_buf_), "%02d:%02d:%02d.%03d(tid=%ld) %s ",
+                              tm_now.tm_hour, tm_now.tm_min, tm_now.tm_sec, (int)tval.tv_usec / 1000,
+                              (long)pthread_self(), kLogLevelName[level].c_str());
     
     va_list ap;
     va_start(ap, fmt);

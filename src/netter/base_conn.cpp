@@ -13,37 +13,46 @@
 #include "base_socket.h"
 
 typedef list< pair<net_handle_t, PktBase*> > PendingPktList;
+typedef list<net_handle_t>  PendingCloseList;
 
-struct PendingPktMgr {
-    ConnMap_t       conn_map;
-    Mutex           mutex;
-    PendingPktList  pkt_list;
+struct PendingEventMgr {
+    ConnMap_t           conn_map;
+    Mutex               mutex;
+    PendingPktList      pkt_list;
+    PendingCloseList    close_list;
 };
 
-IoThreadResource<PendingPktMgr> g_pending_pkt_mgr;
+IoThreadResource<PendingEventMgr> g_pending_event_mgr;
 
 void loop_callback(void* callback_data, uint8_t msg, uint32_t handle, void* pParam)
 {
-    PendingPktMgr* pkt_mgr = (PendingPktMgr*)callback_data;
-    if (!pkt_mgr)
+    PendingEventMgr* event_mgr = (PendingEventMgr*)callback_data;
+    if (!event_mgr)
         return;
     
     PendingPktList tmp_pkt_list;
+    PendingCloseList tmp_close_list;
     {
-        MutexGuard mg(pkt_mgr->mutex);
-        if (pkt_mgr->pkt_list.empty())
-            return;
-        
-        tmp_pkt_list.swap(pkt_mgr->pkt_list);
+        MutexGuard mg(event_mgr->mutex);
+        tmp_pkt_list.swap(event_mgr->pkt_list);
+        tmp_close_list.swap(event_mgr->close_list);
     }
     
-    for (PendingPktList::iterator it = tmp_pkt_list.begin(); it != tmp_pkt_list.end(); ++it) {
-        ConnMap_t::iterator it_conn = pkt_mgr->conn_map.find(it->first);
-        if (it_conn != pkt_mgr->conn_map.end()) {
+    for (auto it = tmp_pkt_list.begin(); it != tmp_pkt_list.end(); ++it) {
+        ConnMap_t::iterator it_conn = event_mgr->conn_map.find(it->first);
+        if (it_conn != event_mgr->conn_map.end()) {
             it_conn->second->SendPkt(it->second);
         }
         
         delete it->second;
+    }
+    
+    for (auto it = tmp_close_list.begin(); it != tmp_close_list.end(); ++it) {
+        net_handle_t handle = *it;
+        ConnMap_t::iterator it_conn = event_mgr->conn_map.find(handle);
+        if (it_conn != event_mgr->conn_map.end()) {
+            it_conn->second->Close();
+        }
     }
 }
 
@@ -84,18 +93,18 @@ void conn_callback(void* callback_data, uint8_t msg, uint32_t handle, void* pPar
 
 void init_thread_base_conn(int io_thread_num)
 {
-    if (g_pending_pkt_mgr.IsInited())
+    if (g_pending_event_mgr.IsInited())
         return;
     
-    g_pending_pkt_mgr.Init(io_thread_num);
+    g_pending_event_mgr.Init(io_thread_num);
     
     if (io_thread_num > 0) {
         for (int i = 0; i < io_thread_num; ++i) {
             EventLoop* el = get_io_event_loop(i);
-            el->AddLoop(loop_callback, g_pending_pkt_mgr.GetIOResource(i));
+            el->AddLoop(loop_callback, g_pending_event_mgr.GetIOResource(i));
         }
     } else {
-        get_main_event_loop()->AddLoop(loop_callback, g_pending_pkt_mgr.GetMainResource());
+        get_main_event_loop()->AddLoop(loop_callback, g_pending_event_mgr.GetMainResource());
     }
 }
 
@@ -141,9 +150,9 @@ void BaseConn::Close()
         return;
     }
     
-    if (g_pending_pkt_mgr.IsInited()) {
-        PendingPktMgr* pkt_mgr = g_pending_pkt_mgr.GetIOResource(m_handle);
-        pkt_mgr->conn_map.erase(m_handle);
+    if (g_pending_event_mgr.IsInited()) {
+        PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(m_handle);
+        event_mgr->conn_map.erase(m_handle);
     }
     
     printf("Client Close: handle=%d\n", m_handle);
@@ -199,38 +208,15 @@ int BaseConn::Send(void* data, int len)
 	return len;
 }
 
-int BaseConn::SendPkt(net_handle_t handle, PktBase* pkt)
-{
-    EventLoop* el = get_io_event_loop(handle);
-    PendingPktMgr* pkt_mgr = g_pending_pkt_mgr.GetIOResource(handle);
-    
-    if (el->IsInLoopThread()) {
-        ConnMap_t::iterator it_conn = pkt_mgr->conn_map.find(handle);
-        if (it_conn != pkt_mgr->conn_map.end()) {
-            it_conn->second->SendPkt(pkt);
-        }
-        
-        delete pkt;
-    } else {
-        pkt_mgr->mutex.Lock();
-        pkt_mgr->pkt_list.push_back(make_pair(handle, pkt));
-        pkt_mgr->mutex.Unlock();
-        
-        el->Wakeup();
-    }
-    
-    return 0;
-}
-
 void BaseConn::OnConnect(BaseSocket *base_socket)
 {
     m_open = true;
     m_base_socket = base_socket;
     m_handle = base_socket->GetHandle();
     
-    if (g_pending_pkt_mgr.IsInited()) {
-        PendingPktMgr* pkt_mgr = g_pending_pkt_mgr.GetIOResource(m_handle);
-        pkt_mgr->conn_map.insert(make_pair(m_handle, this));
+    if (g_pending_event_mgr.IsInited()) {
+        PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(m_handle);
+        event_mgr->conn_map.insert(make_pair(m_handle, this));
     }
     
     base_socket->SetCallback(conn_callback);
@@ -243,9 +229,9 @@ void BaseConn::OnConfirm()
 {
     m_open = true;
     
-    if (g_pending_pkt_mgr.IsInited()) {
-        PendingPktMgr* pkt_mgr = g_pending_pkt_mgr.GetIOResource(m_handle);
-        pkt_mgr->conn_map.insert(make_pair(m_handle, this));
+    if (g_pending_event_mgr.IsInited()) {
+        PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(m_handle);
+        event_mgr->conn_map.insert(make_pair(m_handle, this));
     }
 }
 
@@ -349,3 +335,49 @@ void BaseConn::_ParsePkt()
         OnClose();
 	}
 }
+
+// static methods
+int BaseConn::SendPkt(net_handle_t handle, PktBase* pkt)
+{
+    EventLoop* el = get_io_event_loop(handle);
+    PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(handle);
+    
+    if (el->IsInLoopThread()) {
+        ConnMap_t::iterator it_conn = event_mgr->conn_map.find(handle);
+        if (it_conn != event_mgr->conn_map.end()) {
+            it_conn->second->SendPkt(pkt);
+        }
+        
+        delete pkt;
+    } else {
+        event_mgr->mutex.Lock();
+        event_mgr->pkt_list.push_back(make_pair(handle, pkt));
+        event_mgr->mutex.Unlock();
+        
+        el->Wakeup();
+    }
+    
+    return 0;
+}
+
+int BaseConn::CloseHandle(net_handle_t handle)
+{
+    EventLoop* el = get_io_event_loop(handle);
+    PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(handle);
+    
+    if (el->IsInLoopThread()) {
+        ConnMap_t::iterator it_conn = event_mgr->conn_map.find(handle);
+        if (it_conn != event_mgr->conn_map.end()) {
+            it_conn->second->Close();
+        }
+    } else {
+        event_mgr->mutex.Lock();
+        event_mgr->close_list.push_back(handle);
+        event_mgr->mutex.Unlock();
+        
+        el->Wakeup();
+    }
+    
+    return 0;
+}
+

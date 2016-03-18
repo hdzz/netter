@@ -26,8 +26,6 @@ public:
 	BaseConn();
 	virtual ~BaseConn();
 
-    virtual net_handle_t Connect(const string& server_ip, uint16_t server_port);
-    virtual void Close();
     int SendPkt(PktBase* pkt);    // 需要发送者自己delete pkt
     int Send(void* data, int len);
 
@@ -36,6 +34,9 @@ public:
     net_handle_t GetHandle() { return m_handle; }
     char* GetPeerIP() { return (char*)m_peer_ip.c_str(); }
     uint16_t GetPeerPort() { return m_peer_port; }
+    
+    virtual net_handle_t Connect(const string& server_ip, uint16_t server_port);
+    virtual void Close();
     
 	virtual void OnConnect(BaseSocket* base_socket);
 	virtual void OnConfirm();
@@ -48,6 +49,7 @@ public:
   
     // pkt需要是一个new出来的包，而且发送者不能delete该数据包，有网络库删除
     static int SendPkt(net_handle_t handle, PktBase* pkt);
+    static int CloseHandle(net_handle_t handle);
 protected:
     void _RecvData();
     void _ParsePkt();
