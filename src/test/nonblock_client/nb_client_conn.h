@@ -12,10 +12,9 @@
 
 class NbClientConn : public BaseConn {
 public:
-    NbClientConn(int total_query) {}
+    NbClientConn() {}
     virtual ~NbClientConn() {}
     
-    virtual void OnConfirm();
 	virtual void HandlePkt(PktBase* pPkt);
 };
 

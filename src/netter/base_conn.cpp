@@ -39,12 +39,20 @@ void loop_callback(void* callback_data, uint8_t msg, uint32_t handle, void* pPar
     }
     
     for (auto it = tmp_pkt_list.begin(); it != tmp_pkt_list.end(); ++it) {
-        ConnMap_t::iterator it_conn = event_mgr->conn_map.find(it->first);
+        net_handle_t handle = it->first;
+        PktBase* pkt = it->second;
+        ConnMap_t::iterator it_conn = event_mgr->conn_map.find(handle);
         if (it_conn != event_mgr->conn_map.end()) {
-            it_conn->second->SendPkt(it->second);
+            BaseConn* conn = it_conn->second;
+            if (conn->IsOpen()) {
+                conn->SendPkt(pkt);
+                delete pkt;
+            } else {
+                conn->AddToWaitPktList(pkt);
+            }
+        } else {
+            delete pkt;
         }
-        
-        delete it->second;
     }
     
     for (auto it = tmp_close_list.begin(); it != tmp_close_list.end(); ++it) {
@@ -127,6 +135,14 @@ BaseConn::~BaseConn()
 {
 	//printf("BaseConn::~BaseConn, handle=%d\n", m_handle);
     
+    if (!m_wait_pkt_list.empty()) {
+        for (auto it = m_wait_pkt_list.begin(); it != m_wait_pkt_list.end(); ++it) {
+            PktBase* pkt = *it;
+            delete pkt;
+        }
+        
+        m_wait_pkt_list.clear();
+    }
 }
 
 net_handle_t BaseConn::Connect(const string& server_ip, uint16_t server_port)
@@ -139,6 +155,11 @@ net_handle_t BaseConn::Connect(const string& server_ip, uint16_t server_port)
     m_handle = m_base_socket->Connect(server_ip.c_str(), server_port, conn_callback, this);
     if (m_handle == NETLIB_INVALID_HANDLE) {
         delete this;
+    } else {
+        if (g_pending_event_mgr.IsInited()) {
+            PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(m_handle);
+            event_mgr->conn_map.insert(make_pair(m_handle, this));
+        }
     }
     
     return m_handle;
@@ -229,9 +250,14 @@ void BaseConn::OnConfirm()
 {
     m_open = true;
     
-    if (g_pending_event_mgr.IsInited()) {
-        PendingEventMgr* event_mgr = g_pending_event_mgr.GetIOResource(m_handle);
-        event_mgr->conn_map.insert(make_pair(m_handle, this));
+    if (!m_wait_pkt_list.empty()) {
+        for (auto it = m_wait_pkt_list.begin(); it != m_wait_pkt_list.end(); ++it) {
+            PktBase* pkt = *it;
+            SendPkt(pkt);
+            delete pkt;
+        }
+        
+        m_wait_pkt_list.clear();
     }
 }
 
@@ -345,10 +371,16 @@ int BaseConn::SendPkt(net_handle_t handle, PktBase* pkt)
     if (el->IsInLoopThread()) {
         ConnMap_t::iterator it_conn = event_mgr->conn_map.find(handle);
         if (it_conn != event_mgr->conn_map.end()) {
-            it_conn->second->SendPkt(pkt);
+            BaseConn* conn = it_conn->second;
+            if (conn->IsOpen()) {
+                conn->SendPkt(pkt);
+                delete pkt;
+            } else {
+                conn->AddToWaitPktList(pkt);
+            }
+        } else {
+            delete pkt;
         }
-        
-        delete pkt;
     } else {
         event_mgr->mutex.Lock();
         event_mgr->pkt_list.push_back(make_pair(handle, pkt));

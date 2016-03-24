@@ -29,11 +29,13 @@ public:
     int SendPkt(PktBase* pkt);    // 需要发送者自己delete pkt
     int Send(void* data, int len);
 
+    bool IsOpen() { return m_open; }
     void SetHeartbeatInterval(int interval) { m_heartbeat_interval = interval; }
     void SetConnTimerout(int timeout) { m_conn_timeout = timeout; }
     net_handle_t GetHandle() { return m_handle; }
     char* GetPeerIP() { return (char*)m_peer_ip.c_str(); }
     uint16_t GetPeerPort() { return m_peer_port; }
+    void AddToWaitPktList(PktBase* pkt) { m_wait_pkt_list.push_back(pkt); }
     
     virtual net_handle_t Connect(const string& server_ip, uint16_t server_port);
     virtual void Close();
@@ -66,6 +68,7 @@ protected:
 	uint16_t		m_peer_port;
 	SimpleBuffer	m_in_buf;
 	SimpleBuffer	m_out_buf;
+    list<PktBase*>  m_wait_pkt_list;    // 到服务端连接连接前，等待发送的数据包列表
 
 	uint64_t		m_last_send_tick;
 	uint64_t		m_last_recv_tick;
