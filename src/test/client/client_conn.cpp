@@ -7,7 +7,7 @@
 
 #include <assert.h>
 #include "client_conn.h"
-#include "block_socket_wrapper.h"
+#include "block_socket.h"
 
 const int kMaxTimeout = 500;    // 500ms
 const int kInitAllocSize = 4096;

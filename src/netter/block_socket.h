@@ -1,12 +1,12 @@
 /*
- * block_socket_wrapper.h
+ * block_socket.h
  *
  *  Created on: 2016-3-14
  *      Author: ziteng
  */
 
-#ifndef __NETTER_BLOCK_SOCKET_WRAPPER_H__
-#define __NETTER_BLOCK_SOCKET_WRAPPER_H__
+#ifndef __NETTER_BLOCK_SOCKET_H__
+#define __NETTER_BLOCK_SOCKET_H__
 
 #include "ostype.h"
 
